@@ -1,6 +1,7 @@
 package main
 
 import (
+	"go-api-template/src/endpoints"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func main() {
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{Timeout: 10 * time.Second}))
 
 	e.Validator = &CustomValidator{validator: validator.New()}
+	endpoints.RegisterAll(e)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
