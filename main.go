@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-api-template/src/endpoints"
+	"go-api-template/src/errors"
 	"net/http"
 	"time"
 
@@ -35,6 +36,7 @@ func main() {
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 	endpoints.RegisterAll(e)
+	e.HTTPErrorHandler = errors.HTTPErrorHandler
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
