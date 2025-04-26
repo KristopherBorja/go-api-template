@@ -2,11 +2,11 @@ package cfg
 
 import (
 	"encoding/json"
+	"log/slog"
 	"os"
 	"sync"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/labstack/gommon/log"
 )
 
 var (
@@ -38,19 +38,18 @@ type secrets struct {
 	PostgresPassword string `env:"PG_PASSWORD"`
 }
 
-func GetLogLevel(logLevel string) log.Lvl {
-	level := log.INFO
+func GetLogLevel(logLevel string) slog.Level {
 	switch logLevel {
 	case "debug":
-		level = log.DEBUG
+		return slog.LevelDebug
 	case "warn":
-		level = log.WARN
+		return slog.LevelWarn
 	case "error":
-		level = log.ERROR
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
-	return level
 }
-
 func Cfg() config {
 	once.Do(func() {
 

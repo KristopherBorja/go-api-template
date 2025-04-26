@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 )
@@ -8,6 +9,7 @@ import (
 var Logger *slog.Logger
 
 func InitLogger(level slog.Level) {
+	fmt.Println(level)
 	opts := &slog.HandlerOptions{
 		Level: level,
 	}
