@@ -1,44 +1,66 @@
 package endpoints
 
 import (
+	"context"
+	cfg "go-api-template/src/config"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
-type User struct {
-	Name  string `json:"name" validate:"required"`
-	Email string `json:"email" validate:"required,email"`
+func RegisterGreetingsRoutes(e *echo.Echo) {
+	prefix := "/greetings"
+	e.GET(prefix+"/greet", getGreetHandler)
+	e.POST(prefix+"/hello", postHelloHandler)
 }
 
-func RegisterRoutes(e *echo.Echo) {
-	e.GET("/health", health)
-	e.POST("/user", greetUser)
-
-}
-func health(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{
-		"status": "OK",
-	})
+// Request struct with validation tags
+type HelloRequest struct {
+	Name string `json:"name" validate:"required,min=2"`
 }
 
-func greetUser(c echo.Context) error {
-	u := new(User)
+// Response struct
+type HelloResponse struct {
+	Message string `json:"message"`
+}
 
-	if err := c.Bind(u); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+type GreetQuery struct {
+	Name  string `query:"name" validate:"required,min=2"`
+	Title string `query:"title" validate:"omitempty,min=2"`
+}
+
+func getGreetHandler(c echo.Context) error {
+	var params GreetQuery
+	if err := c.Bind(&params); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err := c.Validate((&params)); err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
-	if err := c.Validate(u); err != nil {
+	_, err := cfg.Red().Set(context.Background(), "greet", "Hello "+params.Title+" "+params.Name+"!", 0).Result()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	greeting, err := cfg.Red().Get(context.Background(), "greet").Result()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+	response := HelloResponse{Message: greeting}
+	return c.JSON(http.StatusOK, response)
+}
+
+func postHelloHandler(c echo.Context) error {
+	var req HelloRequest
+
+	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, u)
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+	}
+	response := HelloResponse{Message: "Hello " + req.Name + "!"}
+	return c.JSON(http.StatusOK, response)
 }
-
-// func show(c echo.Context) error {
-// Get team and member from the query string
-// 	team := c.QueryParam("team")
-// 	member := c.QueryParam("member")
-// 	return c.String(http.StatusOK, "team:" + team + ", member:" + member)
-// }

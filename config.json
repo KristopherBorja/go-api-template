@@ -1,0 +1,15 @@
+{
+    "log_level": "info",
+    "redis": {
+        "enabled": true,
+        "address": "localhost:6379",
+        "db": 1
+    },
+    "postgres": {
+        "username": "postgres",
+        "address": "localhost:5432",
+        "db_name": "app",
+        "ssl_mode": false,
+        "schema": "app"
+    }
+}
