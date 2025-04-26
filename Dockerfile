@@ -15,6 +15,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /go-api-template
 
 COPY --from=builder /app/app .
+COPY --from=builder /app/config.json ./config.json
 
 EXPOSE 8080
 
