@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	cfg "go-api-template/src/config"
 	"go-api-template/src/endpoints"
 	"go-api-template/src/logs"
 	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -32,8 +37,6 @@ func main() {
 	logLevel := cfg.GetLogLevel(config.LogLevel)
 	logs.InitLogger(slog.Level(logLevel))
 
-	logs.Logger.Info("Staring application", slog.String("env", "production"))
-
 	e.Use(middleware.RequestID()) // 📌 Add unique ID to all logs/errors early
 	e.Use(logs.SlogMiddleware())
 	e.Use(middleware.Recover())                                                              // 🛑 Catch panics before they crash the server
@@ -47,5 +50,26 @@ func main() {
 
 	endpoints.RegisterGreetingsRoutes(e)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	logs.Logger.Info("Staring application", slog.String("env", "production"))
+	go func() {
+		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
+			logs.Logger.Error("Server failed to start", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logs.Logger.Info("Shutdown signal received, exiting gracefully...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := e.Shutdown(ctx); err != nil {
+		logs.Logger.Error("Failed to gracefully shutdown server", slog.String("error", err.Error()))
+	} else {
+		logs.Logger.Info("Server shutdown completed OK")
+	}
 }
