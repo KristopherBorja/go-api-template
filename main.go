@@ -25,10 +25,10 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
 
-func init() {
-	cfg.Red()
+// func init() {
+// 	cfg.Red()
 
-}
+// }
 
 func main() {
 	config := cfg.Cfg()
@@ -50,16 +50,17 @@ func main() {
 
 	endpoints.RegisterGreetingsRoutes(e)
 
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
 	logs.Logger.Info("Staring application", slog.String("env", "production"))
 	go func() {
 		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
 			logs.Logger.Error("Server failed to start", slog.String("error", err.Error()))
-			os.Exit(1)
+			quit <- os.Interrupt
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	logs.Logger.Info("Shutdown signal received, exiting gracefully...")
